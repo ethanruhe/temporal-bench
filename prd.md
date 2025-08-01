@@ -13,21 +13,21 @@ This approach provides a quantitative, automated assessment of model capabilitie
 The project will be organized in a clear, scalable directory structure and assumes a `~/.env` file:
 
 temporal-bench/  
-├── main.py                 \# Main benchmark runner script  
-├── results/                \# Output directory for reports and raw model outputs  
-│   └── report.md           \# Final summary report  
+├── main.py                 # Main benchmark runner script  
+├── results/                # Output directory for reports and raw model outputs  
+│   └── report.md           # Final summary report  
 ├── prompts/  
-│   ├── refactor\_prompt.txt \# Master prompt for the code transformation task  
-│   └── grading\_prompt.txt  \# Master prompt for the evaluation task  
-└── test\_cases/  
+│   ├── refactor_prompt.txt # Master prompt for the code transformation task  
+│   └── grading_prompt.txt  # Master prompt for the evaluation task  
+└── test_cases/  
     ├── go/  
-    │   ├── 01\_hello\_world/  
+    │   ├── 01_hello_world/  
     │   │   ├── before.go  
     │   │   ├── after.go  
     │   │   └── metadata.json  
     │   └── ...  
     ├── python/  
-    │   ├── 01\_define\_workflow/  
+    │   ├── 01_define_workflow/  
     │   │   ├── before.py  
     │   │   ├── after.py  
     │   │   └── metadata.json  
@@ -35,7 +35,7 @@ temporal-bench/
     └── (directories for java, php, typescript, dotnet, ruby)
 
 * **main.py**: The orchestrator that loads tests, calls models, and generates the report.  
-* **test\_cases/**: Contains subdirectories for each language. Each test case within a language folder includes:  
+* **test_cases/**: Contains subdirectories for each language. Each test case within a language folder includes:  
   * before.{ext}: The starting code.  
   * after.{ext}: The target "golden" implementation.  
   * metadata.json: A file containing a natural language description of the task, e.g., {"description": "Refactor the function to be a Temporal Activity with a custom retry policy."}.
@@ -56,10 +56,10 @@ The grader will be given the original code (before), the golden solution (after)
 
 ### **Score Aggregation**
 
-* Language Score: For each model, scores for a specific language are summed and normalized to a 0-100 scale.  
-  Language Score=NumCaseslang​×2∑Scoreslang​​×100  
-* Aggregate Score: The total score across all languages for a model, also normalized to 100\.  
-  Aggregate Score=NumCasestotal​×2∑Scorestotal​​×100
+* **Language Score**: For each model, scores for a specific language are summed and normalized to a 0-100 scale.  
+  \[ \text{Language Score} = \frac{\sum \text{Scores}_{\text{lang}}}{\text{NumCases}_{\text{lang}} \times 2} \times 100 \]
+* **Aggregate Score**: The total score across all languages for a model, also normalized to 100.  
+  \[ \text{Aggregate Score} = \frac{\sum \text{Scores}_{\text{total}}}{\text{NumCases}_{\text{total}} \times 2} \times 100 \]
 
 ---
 
@@ -69,48 +69,48 @@ The benchmark will be driven by a main script and several helper functions.
 
 ### **main.py (Orchestrator)**
 
-\`\`\`  
+```python
 function main():  
-    // 1\. Setup  
-    API\_KEYS \= load\_api\_keys\_from\_env()  
-    MODELS\_TO\_TEST \= \['gpt-4o-mini', 'claude-3-haiku', 'gemini-1.5-flash'\]  
-    GRADER\_MODEL \= 'claude-3-opus'  
+    // 1. Setup  
+    API_KEYS = load_api_keys_from_env()  
+    MODELS_TO_TEST = ['gpt-4o-mini', 'claude-3-haiku', 'gemini-1.5-flash']  
+    GRADER_MODEL = 'claude-3-opus'  
       
-    // 2\. Load all test cases from the \`test\_cases\` directory  
-    test\_cases \= discover\_test\_cases('test\_cases/')  
-    results \= {}
+    // 2. Load all test cases from the `test_cases` directory  
+    test_cases = discover_test_cases('test_cases/')  
+    results = {}
 
-    // 3\. Iterate through each test case and model  
-    for case in test\_cases:  
-        before\_code \= read\_file(case.before\_path)  
-        after\_code \= read\_file(case.after\_path)  
-        task\_desc \= read\_json(case.metadata\_path).description
+    // 3. Iterate through each test case and model  
+    for case in test_cases:  
+        before_code = read_file(case.before_path)  
+        after_code = read_file(case.after_path)  
+        task_desc = read_json(case.metadata_path).description
 
-        for model in MODELS\_TO\_TEST:  
+        for model in MODELS_TO_TEST:  
             // 3a. Prompt the model to refactor the code  
-            refactor\_prompt \= build\_refactor\_prompt(case.language, task\_desc, before\_code)  
-            generated\_code \= call\_llm(model, refactor\_prompt)
+            refactor_prompt = build_refactor_prompt(case.language, task_desc, before_code)  
+            generated_code = call_llm(model, refactor_prompt)
 
             // 3b. Grade the generated code using the grader model  
-            grading\_prompt \= build\_grading\_prompt(before\_code, after\_code, generated\_code)  
-            grade\_json \= call\_llm(GRADER\_MODEL, grading\_prompt, response\_format='json')  
+            grading_prompt = build_grading_prompt(before_code, after_code, generated_code)  
+            grade_json = call_llm(GRADER_MODEL, grading_prompt, response_format='json')  
               
             // 3c. Store the score, rationale, and raw output  
-            store\_result(results, case.name, model, grade\_json, generated\_code)
+            store_result(results, case.name, model, grade_json, generated_code)
 
-    // 4\. Calculate final scores and generate report  
-    final\_scores \= calculate\_final\_scores(results)  
-    generate\_markdown\_report(final\_scores, results)  
+    // 4. Calculate final scores and generate report  
+    final_scores = calculate_final_scores(results)  
+    generate_markdown_report(final_scores, results)  
     print("Benchmark complete. View report at results/report.md")  
-\`\`\`
+```
 
 ### **Helper Functions**
 
-* **load\_api\_keys\_from\_env()**: Reads .env and returns a dictionary mapping model families or specific models to their API keys.  
-* **discover\_test\_cases()**: Traverses the test\_cases directory and returns a list of objects, each representing a test case with its file paths and language.  
-* **call\_llm()**: A wrapper that takes a model name and prompt, selects the correct client library (OpenAI, Anthropic, Google), and returns the model's response. It handles authentication and error logging.  
-* **calculate\_final\_scores()**: Aggregates the raw scores into the per-language and overall scores for the final report.  
-* **generate\_markdown\_report()**: Formats the final and raw results into a human-readable markdown file.
+* **load_api_keys_from_env()**: Reads .env and returns a dictionary mapping model families or specific models to their API keys.  
+* **discover_test_cases()**: Traverses the test_cases directory and returns a list of objects, each representing a test case with its file paths and language.  
+* **call_llm()**: A wrapper that takes a model name and prompt, selects the correct client library (OpenAI, Anthropic, Google), and returns the model's response. It handles authentication and error logging.  
+* **calculate_final_scores()**: Aggregates the raw scores into the per-language and overall scores for the final report.  
+* **generate_markdown_report()**: Formats the final and raw results into a human-readable markdown file.
 
 ---
 
@@ -118,58 +118,62 @@ function main():
 
 Prompts will be stored in template files and populated by the script to ensure consistency.
 
-### **Refactoring Prompt (prompts/refactor\_prompt.txt)**
+### **Refactoring Prompt (prompts/refactor_prompt.txt)**
 
 This prompt is for the models being tested.
 
+```text
 You are a principal software engineer specializing in Temporal.io. Your task is to refactor the provided {{language}} code to use the Temporal SDK.
 
-\*\*Task:\*\* {{task\_description}}
+**Task:** {{task_description}}
 
 Modify the "BEFORE" code to implement the task using correct Temporal concepts. Output only the final, complete code block. Do not include any explanations.
 
-\---  
-\*\*BEFORE CODE ({{language}}):\*\*  
-\`\`\`{{language}}  
+---  
+**BEFORE CODE ({{language}}):**  
+```{{language}}  
 {{code}}
+```
 
 ---
 
 **REFACTORED CODE ({{language}}):**
+```
 
-\#\#\# Grading Prompt (\`prompts/grading\_prompt.txt\`)
+### **Grading Prompt (prompts/grading_prompt.txt)**
 
 This prompt is for the high-capability "grader" model.
 
-\`\`\`text  
+```text  
 You are a principal engineer at Temporal. Evaluate an AI's attempt to refactor code to use Temporal based on semantic equivalence, not exact text match.
 
-Compare the \`CANDIDATE\` code to the \`GOLDEN AFTER\` code.
+Compare the `CANDIDATE` code to the `GOLDEN AFTER` code.
 
-\*\*Scoring Rubric:\*\*  
-\- \*\*2 (Full Credit):\*\* Semantically equivalent and functionally correct.  
-\- \*\*1 (Partial Credit):\*\* Attempts to use Temporal but has significant errors.  
-\- \*\*0 (No Credit):\*\* Completely incorrect or fails to use Temporal.
+**Scoring Rubric:**  
+- **2 (Full Credit):** Semantically equivalent and functionally correct.  
+- **1 (Partial Credit):** Attempts to use Temporal but has significant errors.  
+- **0 (No Credit):** Completely incorrect or fails to use Temporal.
 
-Respond with a single JSON object with keys \`score\` (integer) and \`rationale\` (string).
+Respond with a single JSON object with keys `score` (integer) and `rationale` (string).
 
-\---  
-\*\*\`BEFORE\` CODE:\*\*
+---  
+**`BEFORE` CODE:**
 
-{{before\_code}}
+{{before_code}}
 
-\---  
-\*\*\`GOLDEN AFTER\` CODE (Ground Truth):\*\*
+---  
+**`GOLDEN AFTER` CODE (Ground Truth):**
 
-{{after\_code}}
+{{after_code}}
 
-\---  
-\*\*\`CANDIDATE\` CODE (AI Generated):\*\*
+---  
+**`CANDIDATE` CODE (AI Generated):**
 
-{{candidate\_code}}
+{{candidate_code}}
 
-\---  
-\*\*YOUR JSON EVALUATION:\*\*
+---  
+**YOUR JSON EVALUATION:**
+```
 
 ---
 
@@ -179,7 +183,7 @@ This benchmark is designed to be easily extended.
 
 ### **Adding New Test Cases**
 
-To add a new test, an engineer simply creates a new folder in the appropriate language directory (e.g., test\_cases/typescript/04\_signals\_and\_queries/) and adds the before.ts, after.ts, and metadata.json files. The benchmark script will automatically discover and include it in the next run.
+To add a new test, an engineer simply creates a new folder in the appropriate language directory (e.g., test_cases/typescript/04_signals_and_queries/) and adds the before.ts, after.ts, and metadata.json files. The benchmark script will automatically discover and include it in the next run.
 
 ### **Future Refactoring**
 

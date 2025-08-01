@@ -2,10 +2,18 @@
 
 An automated benchmark for evaluating how effectively foundational LLMs can integrate Temporal into existing codebases.
 
+## Benchmark Score
+
+The benchmark generates two types of scores for each model:
+
+- **Language Score**: For each programming language, individual test case scores (0-2) are summed and normalized to a 0-100 scale
+- **Aggregate Score**: The total score across all languages, also normalized to 0-100
+
+**Important**: Scores are a function of the specific test set used. As the test set expands, the benchmark will be versioned accordingly. Scores across different benchmark versions are not comparable since the underlying tests have changed. However, within any given benchmark version, scores provide a reliable basis for comparing performance across different models.
+
+
 ## Setup
-
 ### Python Environment
-
 This project uses a Python virtual environment to manage dependencies. Follow these steps to set up your development environment:
 
 #### Create and activate the virtual environment
